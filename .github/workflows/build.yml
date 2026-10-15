@@ -19,6 +19,19 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Refresh ad blocklist (keeps the bundled list if this fails)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts \
+            | awk '/^0\.0\.0\.0 /{print tolower($2)}' \
+            | grep -v -E '^(0\.0\.0\.0|localhost.*|local|broadcasthost|googletagmanager\.com)$' \
+            | sort -u > /tmp/blocklist.txt || true
+          if [ "$(wc -l < /tmp/blocklist.txt)" -gt 10000 ]; then
+            cp /tmp/blocklist.txt app/src/main/assets/blocklist.txt
+            echo "Blocklist refreshed"
+          else
+            echo "Using bundled blocklist"
+          fi
+
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon
 
